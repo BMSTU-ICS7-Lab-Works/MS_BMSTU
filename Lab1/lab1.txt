@@ -1,0 +1,106 @@
+X = [-14.34,-16.97,-14.09,-14.74,-16.69,-13.85,-15.55,-14.62,-13.30,-15.52,-14.75,-16.51,-17.15,-16.87,-15.06,-13.60,-14.48,-14.71,-14.17,-13.88,-14.55,-15.37,-14.81,-16.05,-17.06,-15.86,-15.12,-15.98,-14.16,-15.81,-15.06,-16.19,-16.22,-16.19,-14.87,-15.62,-15.86,-15.25,-16.34,-14.44,-14.72,-15.17,-15.24,-14.44,-15.93,-14.87,-16.53,-15.76,-15.12,-12.91,-16.06,-16.06,-14.89,-15.57,-13.59,-16.84,-13.88,-14.33,-15.45,-16.58,-16.05,-14.34,-13.55,-16.78,-14.15,-14.28,-14.40,-13.98,-16.23,-15.35,-14.77,-15.61,-15.59,-15.64,-14.76,-17.18,-15.13,-15.01,-14.21,-13.91,-16.55,-15.44,-14.03,-16.44,-15.57,-15.07,-16.28,-16.30,-15.74,-14.03,-14.85,-15.73,-15.81,-14.42,-14.14,-15.14,-15.49,-16.42,-14.22,-14.20,-17.17,-15.82,-14.96,-14.75,-14.98,-13.64,-14.00,-17.29,-14.51,-16.18,-15.70,-15.07,-14.28,-14.55,-13.85,-15.36,-15.74,-14.61,-16.32,-15.34];
+X = sort(X);
+Mmin = min(X);
+Mmax = max(X);
+
+
+fprintf("Mmin = %f\n", Mmin);
+fprintf("Mmin = %f\n", Mmax);
+
+R = Mmax - Mmin;
+fprintf("R = %f\n", R);
+
+Mu = getMu(X);
+fprintf("Mu = %f\n", Mu);
+
+Ssqr = getSsqr(X);
+fprintf("Ssqr = %f\n", Ssqr);
+
+m = getM(X);
+fprintf("m = %f\n", m);
+
+GroupAndPlot(X);
+hold on;
+DensityDistribution(X, Mu, Ssqr, m);
+
+figure;
+EmpiricF(X);
+hold on;
+Distribution(X, Mu, Ssqr, m);
+
+function mu = getMu(X)
+    mu = sum(X)/length(X);
+end
+
+function Ssqr = getSsqr(X)
+    n = length(X);
+    Mu = getMu(X);
+    Ssqr = sum((X - Mu).^2) / (n - 1);
+end
+
+function m = getM(X)
+    m = floor(log2(length(X)) + 2);
+end
+
+function GroupAndPlot(X)
+    n = length(X);
+    m = getM(X);
+    R = max(X) - min(X);
+    
+    intervals = zeros(1, m+1);
+    cnt = zeros(1, m+1);
+    Delta = R / m;
+    fprintf('Delta = %f\n', Delta);
+    for i = 0:m
+        intervals(i + 1) = X(1) + Delta * i;
+    end
+    
+    for i = 1:m-1
+        fprintf('[%4.2f, %4.2f)', intervals(i), intervals(i+1));
+    end
+    fprintf('[%4.2f, %4.2f]\n', intervals(m), intervals(m+1));
+    
+    ind = 1;
+    for i = 1:n
+        if (X(i) >= intervals(ind + 1))
+            ind = ind + 1;
+        end
+        cnt(ind) = cnt(ind) + 1;
+    end
+    
+    for i = 1:m
+        fprintf('|%8d      |', cnt(i));
+    end
+    
+    graph_buf = cnt(1:m+1);
+    for i = 1:m+1
+        graph_buf(i) = cnt(i) / (n * Delta); 
+    end
+    
+    stairs(intervals, graph_buf), grid;
+end
+
+function DensityDistribution(X, MX, DX, m)
+    R = max(X) - min(X);
+    Delta = R / m;
+    Sigma = sqrt(DX);
+    
+    Xn = (MX - R): Delta/50 : (MX + R);
+    Y = normpdf(Xn, MX, Sigma);
+    plot(Xn, Y), grid;
+end
+
+function Distribution(X, MX, DX, m)
+    R = max(X) - min(X);
+    Delta = R / m;
+    
+    Xn = (MX - R): Delta : (MX + R);
+    Y = 1/2 * (1 + erf((Xn - MX) / sqrt(2 * DX)));
+    plot(Xn, Y), grid;
+end
+
+function EmpiricF(X)
+    [yy, xx] = ecdf(X);
+    
+    stairs(xx, yy), grid;
+end
